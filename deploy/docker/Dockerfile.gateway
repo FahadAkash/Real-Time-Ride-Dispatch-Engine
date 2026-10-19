@@ -1,0 +1,24 @@
+# Multi-stage non-root container per AGENTS.md Section 11
+FROM golang:1.23-alpine AS builder
+
+WORKDIR /src
+RUN apk add --no-cache git ca-certificates
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build \
+    -trimpath \
+    -ldflags="-s -w -extldflags '-static'" \
+    -o /bin/gateway \
+    ./cmd/gateway
+
+FROM gcr.io/distroless/static-debian12:nonroot
+USER nonroot:nonroot
+WORKDIR /app
+COPY --from=builder /bin/gateway /app/gateway
+
+EXPOSE 8080 9100
+ENTRYPOINT ["/app/gateway"]
+

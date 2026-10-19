@@ -1,0 +1,238 @@
+openapi: 3.0.3
+info:
+  title: Real-Time Ride Dispatch Engine API
+  description: High-throughput, geo-optimized real-time ride dispatch backend API.
+  version: 1.0.0
+servers:
+  - url: http://localhost:8080/api
+    description: Local API Gateway
+paths:
+  /ride/request:
+    post:
+      summary: Request a ride
+      description: Matches the rider to the nearest available driver and reserves the candidate atomically.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: header
+          name: Idempotency-Key
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestRideRequest'
+      responses:
+        '201':
+          description: Ride successfully created and driver reserved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+        '200':
+          description: Existing ride returned for idempotent key or no driver found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+        '400':
+          description: Invalid coordinates, unsupported service type, or missing idempotency key
+        '401':
+          description: Missing or invalid JWT
+        '403':
+          description: Forbidden role or riderId mismatch
+        '429':
+          description: Rate limit exceeded
+
+  /ride/status:
+    get:
+      summary: Get ride status
+      description: Returns the current state of a ride. Caller must be the rider or assigned driver.
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: rideId
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Ride state details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ride'
+        '403':
+          description: Forbidden: caller is not authorized for this ride
+        '404':
+          description: Ride not found
+
+  /ride/response:
+    post:
+      summary: Driver response to ride offer
+      description: Driver accepts or rejects a pending ride offer.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DriverResponseRequest'
+      responses:
+        '200':
+          description: Driver response processed
+        '403':
+          description: Ride not offered to caller
+        '409':
+          description: Offer expired or already responded to
+
+  /ride/cancel:
+    post:
+      summary: Cancel a ride
+      description: Cancels a ride if still prior to trip start.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - rideId
+              properties:
+                rideId:
+                  type: string
+                reason:
+                  type: string
+      responses:
+        '200':
+          description: Ride cancelled
+        '409':
+          description: Ride cannot be cancelled in its current state
+
+  /driver/update-location:
+    post:
+      summary: Update driver location
+      description: Periodic driver GPS update. Enforces coordinate validation and speed plausibility checks.
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateLocationRequest'
+      responses:
+        '200':
+          description: Location updated
+        '422':
+          description: Plausibility check failed (GPS spoofing / teleportation detected)
+        '429':
+          description: Update frequency exceeded (rate limit ~1 update / 2s / driver)
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    Location:
+      type: object
+      required:
+        - latitude
+        - longitude
+      properties:
+        latitude:
+          type: number
+          format: double
+          minimum: -90.0
+          maximum: 90.0
+        longitude:
+          type: number
+          format: double
+          minimum: -180.0
+          maximum: 180.0
+
+    RequestRideRequest:
+      type: object
+      required:
+        - pickup
+        - dropoff
+        - serviceType
+      properties:
+        riderId:
+          type: string
+        pickup:
+          $ref: '#/components/schemas/Location'
+        dropoff:
+          $ref: '#/components/schemas/Location'
+        serviceType:
+          type: string
+          enum: [STANDARD, COMFORT, XL]
+        region:
+          type: string
+
+    DriverResponseRequest:
+      type: object
+      required:
+        - rideId
+        - accept
+      properties:
+        driverId:
+          type: string
+        rideId:
+          type: string
+        accept:
+          type: boolean
+
+    UpdateLocationRequest:
+      type: object
+      required:
+        - location
+      properties:
+        driverId:
+          type: string
+        location:
+          $ref: '#/components/schemas/Location'
+        region:
+          type: string
+        state:
+          type: string
+          enum: [AVAILABLE, BUSY, OFFLINE]
+
+    Ride:
+      type: object
+      properties:
+        rideId:
+          type: string
+        riderId:
+          type: string
+        driverId:
+          type: string
+        status:
+          type: string
+          enum: [PENDING_ACCEPT, ACCEPTED, STARTED, COMPLETED, REASSIGNING, NO_DRIVER_FOUND, CANCELLED]
+        pickup:
+          $ref: '#/components/schemas/Location'
+        dropoff:
+          $ref: '#/components/schemas/Location'
+        serviceType:
+          type: string
+        version:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+

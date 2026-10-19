@@ -1,0 +1,11 @@
+apiVersion: 1
+providers:
+  - name: dispatch
+    orgId: 1
+    folder: Ride Dispatch
+    type: file
+    disableDeletion: true
+    allowUiUpdates: false
+    updateIntervalSeconds: 30
+    options:
+      path: /var/lib/grafana/dashboards

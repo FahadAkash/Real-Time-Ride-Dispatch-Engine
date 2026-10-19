@@ -1,0 +1,61 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    env: local
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+        labels: { service: prometheus }
+
+  # App services expose /metrics on an INTERNAL port (METRICS_ADDR=:9100),
+  # never on the public listener.
+  - job_name: gateway
+    static_configs:
+      - targets: ["gateway:9100"]
+        labels: { service: gateway }
+
+  - job_name: dispatch
+    static_configs:
+      - targets: ["dispatch:9100"]
+        labels: { service: dispatch }
+
+  - job_name: location
+    static_configs:
+      - targets: ["location:9100"]
+        labels: { service: location }
+
+  - job_name: notifier
+    static_configs:
+      - targets: ["notifier:9100"]
+        labels: { service: notifier }
+
+  - job_name: timeout-worker
+    static_configs:
+      - targets: ["timeout-worker:9100"]
+        labels: { service: timeout-worker }
+
+  - job_name: redis
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+        labels: { service: redis }
+
+  - job_name: mongodb
+    static_configs:
+      - targets: ["mongodb-exporter:9216"]
+        labels: { service: mongodb }
+
+  - job_name: kafka
+    static_configs:
+      - targets: ["kafka-exporter:9308"]
+        labels: { service: kafka }

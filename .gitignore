@@ -1,0 +1,38 @@
+# Binaries and build outputs
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test outputs
+*.out
+*.test
+coverage.txt
+coverage.html
+
+# Dependencies
+vendor/
+
+# Environment and secrets
+.env
+.env.local
+*.pem
+*.key
+*.crt
+deploy/observability/alertmanager/secrets/*
+!deploy/observability/alertmanager/secrets/.gitkeep
+
+# IDE and OS
+.idea/
+.vscode/
+*.swp
+*~
+.DS_Store
+Thumbs.db
+
+# Prometheus & Grafana data volumes (if mounted locally)
+deploy/observability/prometheus-data/
+deploy/observability/grafana-data/
+

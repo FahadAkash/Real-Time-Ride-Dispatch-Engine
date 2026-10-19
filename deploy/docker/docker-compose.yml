@@ -1,0 +1,150 @@
+version: '3.8'
+
+networks:
+  dispatch-net:
+    name: dispatch-net
+    driver: bridge
+
+volumes:
+  redis-data:
+  mongo-data:
+  kafka-data:
+
+services:
+  redis:
+    image: redis:7.2-alpine
+    container_name: dispatch-redis
+    command: ["redis-server", "--appendonly", "yes", "--save", "60", "1"]
+    ports:
+      - "127.0.0.1:6379:6379"
+    volumes:
+      - redis-data:/data
+    networks:
+      - dispatch-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  mongo:
+    image: mongo:7.0
+    container_name: dispatch-mongo
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - dispatch-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  kafka:
+    image: vectorized/redpanda:v24.1.2
+    container_name: dispatch-kafka
+    command:
+      - redpanda
+      - start
+      - --smp=1
+      - --memory=1G
+      - --reserve-memory=0M
+      - --overprovisioned
+      - --node-id=0
+      - --check=false
+      - --kafka-addr=PLAINTEXT://0.0.0.0:29092,OUTSIDE://0.0.0.0:9092
+      - --advertise-kafka-addr=PLAINTEXT://kafka:29092,OUTSIDE://localhost:9092
+    ports:
+      - "127.0.0.1:9092:9092"
+    volumes:
+      - kafka-data:/var/lib/redpanda/data
+    networks:
+      - dispatch-net
+    restart: unless-stopped
+
+  gateway:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.gateway
+    container_name: dispatch-gateway
+    environment:
+      APP_ENV: local
+      HTTP_ADDR: ":8080"
+      METRICS_ADDR: ":9100"
+      REDIS_ADDRS: "redis:6379"
+      MONGO_URI: "mongodb://mongo:27017"
+      MONGO_DB: "dispatch"
+      KAFKA_BROKERS: "kafka:29092"
+    ports:
+      - "127.0.0.1:8080:8080"
+      - "127.0.0.1:9100:9100"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    networks:
+      - dispatch-net
+    restart: unless-stopped
+
+  dispatch:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.dispatch
+    container_name: dispatch-service
+    environment:
+      APP_ENV: local
+      METRICS_ADDR: ":9100"
+      REDIS_ADDRS: "redis:6379"
+      MONGO_URI: "mongodb://mongo:27017"
+      MONGO_DB: "dispatch"
+      KAFKA_BROKERS: "kafka:29092"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    networks:
+      - dispatch-net
+    restart: unless-stopped
+
+  location:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.location
+    container_name: dispatch-location
+    environment:
+      APP_ENV: local
+      METRICS_ADDR: ":9100"
+      REDIS_ADDRS: "redis:6379"
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - dispatch-net
+    restart: unless-stopped
+
+  timeout-worker:
+    build:
+      context: ../../
+      dockerfile: deploy/docker/Dockerfile.timeout-worker
+    container_name: dispatch-timeout-worker
+    environment:
+      APP_ENV: local
+      METRICS_ADDR: ":9100"
+      REDIS_ADDRS: "redis:6379"
+      MONGO_URI: "mongodb://mongo:27017"
+      MONGO_DB: "dispatch"
+    depends_on:
+      redis:
+        condition: service_healthy
+      mongo:
+        condition: service_healthy
+    networks:
+      - dispatch-net
+    restart: unless-stopped
+

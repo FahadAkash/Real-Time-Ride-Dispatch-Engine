@@ -1,0 +1,115 @@
+groups:
+  - name: dispatch-slo
+    rules:
+      - alert: DispatchLatencyP95High
+        expr: histogram_quantile(0.95, sum by (le) (rate(dispatch_latency_seconds_bucket[5m]))) > 5
+        for: 5m
+        labels: { severity: critical, service: dispatch }
+        annotations:
+          summary: "Dispatch p95 latency above 5s"
+          description: "p95 is {{ $value | humanizeDuration }} (SLO target is < 2s)."
+
+      - alert: DispatchLatencySLOBreach
+        expr: histogram_quantile(0.95, sum by (le) (rate(dispatch_latency_seconds_bucket[5m]))) > 2
+        for: 10m
+        labels: { severity: warning, service: dispatch }
+        annotations:
+          summary: "Dispatch p95 latency above 2s SLO"
+          description: "p95 is {{ $value | humanizeDuration }}."
+
+      - alert: DispatchErrorRateHigh
+        expr: |
+          sum(rate(dispatch_requests_total{result="error"}[5m]))
+            / sum(rate(dispatch_requests_total[5m])) > 0.01
+        for: 5m
+        labels: { severity: critical, service: dispatch }
+        annotations:
+          summary: "Dispatch error rate above 1%"
+          description: "Error ratio is {{ $value | humanizePercentage }}."
+
+      - alert: DispatchDoubleBooking
+        expr: increase(dispatch_double_booking_total[5m]) > 0
+        labels: { severity: critical, service: dispatch }
+        annotations:
+          summary: "A driver was double-booked"
+          description: "dispatch_double_booking_total must always be 0. Page immediately."
+
+      - alert: DispatchNoDriverRatioHigh
+        expr: |
+          sum(rate(dispatch_no_driver_total[10m]))
+            / sum(rate(dispatch_requests_total[10m])) > 0.10
+        for: 10m
+        labels: { severity: warning, service: dispatch }
+        annotations:
+          summary: "More than 10% of requests find no driver"
+          description: "No-driver ratio is {{ $value | humanizePercentage }}. Tune this to your real baseline."
+
+      - alert: DispatchThroughputDropped
+        expr: sum(rate(dispatch_requests_total[5m])) < 1 and sum(rate(dispatch_requests_total[5m] offset 1h)) > 50
+        for: 5m
+        labels: { severity: warning, service: dispatch }
+        annotations:
+          summary: "Dispatch traffic dropped sharply versus 1h ago"
+
+  - name: dispatch-pipeline
+    rules:
+      - alert: OutboxBacklogGrowing
+        expr: max(outbox_pending) > 1000
+        for: 5m
+        labels: { severity: critical, service: dispatch }
+        annotations:
+          summary: "Outbox backlog above 1000"
+          description: "Events are not reaching Kafka. Pending: {{ $value }}."
+
+      - alert: KafkaConsumerLagHigh
+        expr: sum by (group) (kafka_consumer_lag) > 10000
+        for: 5m
+        labels: { severity: warning, service: kafka }
+        annotations:
+          summary: "Kafka consumer group {{ $labels.group }} is lagging"
+          description: "Lag is {{ $value }} messages."
+
+      - alert: PushFailuresHigh
+        expr: sum(rate(push_failures_total[5m])) > 5
+        for: 5m
+        labels: { severity: warning, service: notifier }
+        annotations:
+          summary: "Push notification failures above 5/s"
+
+      - alert: LocationIngestDropped
+        expr: sum(rate(driver_location_updates_total[5m])) < 1000
+        for: 5m
+        labels: { severity: warning, service: location }
+        annotations:
+          summary: "Driver location updates far below the ~10k/s expected"
+          description: "Tune the threshold to your real driver count."
+
+  - name: infrastructure
+    rules:
+      - alert: ServiceDown
+        expr: up{job=~"gateway|dispatch|location|notifier|timeout-worker"} == 0
+        for: 1m
+        labels: { severity: critical }
+        annotations:
+          summary: "{{ $labels.service }} is down"
+
+      - alert: RedisDown
+        expr: redis_up == 0
+        for: 1m
+        labels: { severity: critical, service: redis }
+        annotations:
+          summary: "Redis is unreachable (matching cannot reserve drivers)"
+
+      - alert: MongoDown
+        expr: mongodb_up == 0
+        for: 1m
+        labels: { severity: critical, service: mongodb }
+        annotations:
+          summary: "MongoDB is unreachable (ride records cannot be persisted)"
+
+      - alert: KafkaDown
+        expr: kafka_brokers < 1
+        for: 2m
+        labels: { severity: critical, service: kafka }
+        annotations:
+          summary: "No Kafka brokers visible"

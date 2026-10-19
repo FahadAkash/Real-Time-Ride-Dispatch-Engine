@@ -1,0 +1,44 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    name: Build, Vet, Race & Concurrency Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.23'
+          cache: true
+
+      - name: Format Check
+        run: |
+          test -z "$(gofmt -l .)"
+
+      - name: Go Vet
+        run: go vet ./...
+
+      - name: Unit Tests with Race Detector
+        run: go test -v -race -count=1 ./internal/...
+
+      - name: Concurrency & Double-Booking Race Tests
+        run: go test -v -race -count=20 ./test/concurrency/...
+
+      - name: Build Binaries
+        run: |
+          go build -trimpath -o /dev/null ./cmd/gateway
+          go build -trimpath -o /dev/null ./cmd/dispatch
+          go build -trimpath -o /dev/null ./cmd/location
+          go build -trimpath -o /dev/null ./cmd/notifier
+          go build -trimpath -o /dev/null ./cmd/timeout-worker
+          go build -trimpath -o /dev/null ./cmd/loadgen
+
