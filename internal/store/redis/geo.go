@@ -99,4 +99,3 @@ func (c *Client) GetDriverStatus(ctx context.Context, driverID string) (domain.D
 
 	return state, region, lastSeen, nil
 }
-

@@ -36,4 +36,3 @@ func (c *Client) AllowRateLimit(ctx context.Context, principal, route string, li
 
 	return count <= int64(limit), nil
 }
-

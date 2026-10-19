@@ -152,4 +152,3 @@ func TestObjectLevelAuthorization(t *testing.T) {
 		t.Errorf("expected Admin to be authorized, got: %v", err)
 	}
 }
-

@@ -33,4 +33,3 @@ func (s *SimulatedNotifier) NotifyDriverOffer(ctx context.Context, driverID stri
 	})
 	return err
 }
-

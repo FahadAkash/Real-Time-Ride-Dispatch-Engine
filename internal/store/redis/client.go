@@ -61,4 +61,3 @@ func (c *Client) Close() error {
 func (c *Client) Raw() redis.UniversalClient {
 	return c.rdb
 }
-

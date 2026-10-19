@@ -7,8 +7,8 @@ import (
 )
 
 const (
-	MaxHeaderBytes = 1 << 20    // 1 MB
-	MaxBodyBytes   = 16 * 1024  // 16 KB per AGENTS.md Section 10
+	MaxHeaderBytes = 1 << 20   // 1 MB
+	MaxBodyBytes   = 16 * 1024 // 16 KB per AGENTS.md Section 10
 )
 
 // Server wraps an http.Server with production timeouts and lifecycle controls.
@@ -64,4 +64,3 @@ func (s *Server) Start() <-chan error {
 func (s *Server) Shutdown(ctx context.Context) error {
 	return s.httpServer.Shutdown(ctx)
 }
-

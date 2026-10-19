@@ -101,4 +101,3 @@ func VerifyObjectOwnership(claims *UserClaims, ride *domain.Ride) error {
 
 	return domain.ErrForbidden
 }
-

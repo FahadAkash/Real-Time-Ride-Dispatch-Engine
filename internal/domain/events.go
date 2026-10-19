@@ -28,16 +28,16 @@ type EventEnvelope struct {
 
 // OutboxRecord represents an event stored in MongoDB within the same transaction as the ride state mutation.
 type OutboxRecord struct {
-	ID            string          `json:"id" bson:"_id"`
-	EventID       string          `json:"eventId" bson:"eventId"`
-	Topic         string          `json:"topic" bson:"topic"`
-	Key           string          `json:"key" bson:"key"` // rideID for strict partition ordering
-	Payload       json.RawMessage `json:"payload" bson:"payload"`
-	CreatedAt     time.Time       `json:"createdAt" bson:"createdAt"`
-	Published     bool            `json:"published" bson:"published"`
-	PublishedAt   *time.Time      `json:"publishedAt,omitempty" bson:"publishedAt,omitempty"`
-	RetryCount    int             `json:"retryCount" bson:"retryCount"`
-	LastError     string          `json:"lastError,omitempty" bson:"lastError,omitempty"`
+	ID          string          `json:"id" bson:"_id"`
+	EventID     string          `json:"eventId" bson:"eventId"`
+	Topic       string          `json:"topic" bson:"topic"`
+	Key         string          `json:"key" bson:"key"` // rideID for strict partition ordering
+	Payload     json.RawMessage `json:"payload" bson:"payload"`
+	CreatedAt   time.Time       `json:"createdAt" bson:"createdAt"`
+	Published   bool            `json:"published" bson:"published"`
+	PublishedAt *time.Time      `json:"publishedAt,omitempty" bson:"publishedAt,omitempty"`
+	RetryCount  int             `json:"retryCount" bson:"retryCount"`
+	LastError   string          `json:"lastError,omitempty" bson:"lastError,omitempty"`
 }
 
 // NewEventEnvelope constructs a standardized event envelope.
@@ -55,4 +55,3 @@ func NewEventEnvelope(eventID, eventType, rideID string, occurredAt time.Time, p
 		Payload:       bytes,
 	}, nil
 }
-

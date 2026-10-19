@@ -19,12 +19,12 @@ type Config struct {
 }
 
 type Service struct {
-	cfg         Config
-	matcher     *Matcher
-	rideRepo    RideRepo
-	idemStore   IdempotencyStore
-	locker      Locker
-	notifier    Notifier
+	cfg       Config
+	matcher   *Matcher
+	rideRepo  RideRepo
+	idemStore IdempotencyStore
+	locker    Locker
+	notifier  Notifier
 }
 
 func NewService(cfg Config, matcher *Matcher, rideRepo RideRepo, idemStore IdempotencyStore, locker Locker, notifier Notifier) *Service {
@@ -243,4 +243,3 @@ func (s *Service) CancelRide(ctx context.Context, rideID, actor string) error {
 func (s *Service) GetRide(ctx context.Context, rideID string) (*domain.Ride, error) {
 	return s.rideRepo.GetRideByID(ctx, rideID)
 }
-

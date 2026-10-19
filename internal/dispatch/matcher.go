@@ -81,4 +81,3 @@ func (m *Matcher) FindAndReserveBestDriver(ctx context.Context, region string, p
 
 	return nil, domain.ErrNoDriverFound
 }
-

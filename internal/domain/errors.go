@@ -7,7 +7,7 @@ import (
 
 var (
 	// State machine errors
-	ErrInvalidTransition     = errors.New("invalid ride status transition")
+	ErrInvalidTransition      = errors.New("invalid ride status transition")
 	ErrOptimisticLockConflict = errors.New("optimistic lock conflict: version or status mismatch")
 
 	// Resource errors
@@ -51,4 +51,3 @@ func (e *TransitionError) Error() string {
 func (e *TransitionError) Unwrap() error {
 	return ErrInvalidTransition
 }
-

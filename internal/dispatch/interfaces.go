@@ -36,4 +36,3 @@ type RideRepo interface {
 type Notifier interface {
 	NotifyDriverOffer(ctx context.Context, driverID string, ride *domain.Ride, timeout time.Duration) error
 }
-

@@ -39,4 +39,3 @@ type DriverCandidate struct {
 	Location       Location `json:"location"`
 	Score          float64  `json:"score"`
 }
-

@@ -57,4 +57,3 @@ func (p *Producer) Close() {
 		p.client.Close()
 	}
 }
-

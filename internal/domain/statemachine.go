@@ -69,4 +69,3 @@ func Transition(ride *Ride, targetStatus RideStatus, actor, reason string, times
 
 	return nil
 }
-

@@ -63,4 +63,3 @@ func TestServiceTypeValidation(t *testing.T) {
 		t.Errorf("expected FLYING_CAR to be invalid")
 	}
 }
-

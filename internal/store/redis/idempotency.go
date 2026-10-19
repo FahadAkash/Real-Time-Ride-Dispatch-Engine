@@ -30,4 +30,3 @@ func (c *Client) CheckOrSetIdempotency(ctx context.Context, riderID, idemKey, ri
 	}
 	return existingRideID, false, nil
 }
-

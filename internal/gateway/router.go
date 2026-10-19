@@ -10,10 +10,10 @@ import (
 )
 
 type RouterConfig struct {
-	JWTValidator *JWTValidator
-	RateLimiter  RateLimiter
+	JWTValidator    *JWTValidator
+	RateLimiter     RateLimiter
 	RateLimitPerMin int
-	Logger       *slog.Logger
+	Logger          *slog.Logger
 }
 
 // NewRouter sets up the Chi HTTP router with security middlewares and route groups per AGENTS.md.
@@ -72,4 +72,3 @@ func NewRouter(cfg RouterConfig, handlers *Handlers) http.Handler {
 
 	return r
 }
-

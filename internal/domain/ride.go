@@ -96,4 +96,3 @@ type Ride struct {
 	UpdatedAt       time.Time          `json:"updatedAt" bson:"updatedAt"`
 	History         []RideHistoryEntry `json:"history" bson:"history"`
 }
-

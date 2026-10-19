@@ -76,4 +76,3 @@ func RecoveryMiddleware(log *slog.Logger) func(http.Handler) http.Handler {
 		})
 	}
 }
-

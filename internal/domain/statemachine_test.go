@@ -116,4 +116,3 @@ func TestCanCancel(t *testing.T) {
 		t.Errorf("expected COMPLETED not to be cancellable")
 	}
 }
-

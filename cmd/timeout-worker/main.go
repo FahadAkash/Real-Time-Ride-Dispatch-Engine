@@ -13,9 +13,9 @@ import (
 	"github.com/ride-dispatch/engine/internal/platform/config"
 	"github.com/ride-dispatch/engine/internal/platform/logger"
 	"github.com/ride-dispatch/engine/internal/platform/server"
-	"github.com/ride-dispatch/engine/internal/worker"
 	mongostore "github.com/ride-dispatch/engine/internal/store/mongo"
 	redisstore "github.com/ride-dispatch/engine/internal/store/redis"
+	"github.com/ride-dispatch/engine/internal/worker"
 )
 
 func main() {

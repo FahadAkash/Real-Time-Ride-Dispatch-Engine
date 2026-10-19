@@ -143,4 +143,3 @@ func TestMatcher_NoDriverFound(t *testing.T) {
 		t.Fatalf("expected ErrNoDriverFound, got %v", err)
 	}
 }
-

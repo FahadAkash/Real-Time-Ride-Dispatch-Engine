@@ -49,4 +49,3 @@ func main() {
 
 	fmt.Println("All MongoDB indexes verified and created successfully.")
 }
-

@@ -97,4 +97,3 @@ func FromContext(ctx context.Context, log *slog.Logger) *slog.Logger {
 	}
 	return log
 }
-

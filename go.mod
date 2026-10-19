@@ -40,7 +40,4 @@ require (
 	google.golang.org/protobuf v1.34.2 // indirect
 )
 
-replace (
-	github.com/klauspost/compress => C:/Users/fahad/go/pkg/mod/github.com/klauspost/compress@v1.17.11
-	github.com/pierrec/lz4/v4 => C:/Users/fahad/go/pkg/mod/github.com/pierrec/lz4/v4@v4.1.15
-)
+replace github.com/pierrec/lz4/v4 => github.com/pierrec/lz4/v4 v4.1.15

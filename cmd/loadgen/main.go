@@ -194,4 +194,3 @@ func generateToken(privKey *rsa.PrivateKey, sub, role string) string {
 func randInt(min, max int) int {
 	return int(math.Abs(float64(time.Now().UnixNano()%int64(max-min+1)))) + min
 }
-

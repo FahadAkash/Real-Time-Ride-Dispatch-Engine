@@ -96,4 +96,3 @@ func (r *OutboxRelay) ProcessBatch(ctx context.Context) {
 		metrics.OutboxPending.Set(float64(pendingCount))
 	}
 }
-

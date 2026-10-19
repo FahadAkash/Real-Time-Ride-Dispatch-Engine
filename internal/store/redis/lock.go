@@ -57,4 +57,3 @@ func (c *Client) ReleaseRideMutex(ctx context.Context, rideID, token string) (bo
 	val, ok := res.(int64)
 	return ok && val == 1, nil
 }
-

@@ -106,4 +106,3 @@ func TestValidator_CheckPlausibility(t *testing.T) {
 		t.Fatalf("expected ErrSpeedAnomaly for teleportation, got %v", err)
 	}
 }
-

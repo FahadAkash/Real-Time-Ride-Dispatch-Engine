@@ -186,4 +186,3 @@ func (w *TimeoutWorker) handleSingleExpiredRide(ctx context.Context, ride *domai
 		}(candidate.DriverID)
 	}
 }
-

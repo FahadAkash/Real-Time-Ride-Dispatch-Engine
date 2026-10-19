@@ -193,4 +193,3 @@ func TestTimeoutWorker_OptimisticLockConflict(t *testing.T) {
 		// Expected: no notification sent
 	}
 }
-

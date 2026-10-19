@@ -83,4 +83,3 @@ func (v *Validator) CheckPlausibility(prevLoc, newLoc domain.Location, prevTime,
 
 	return nil
 }
-

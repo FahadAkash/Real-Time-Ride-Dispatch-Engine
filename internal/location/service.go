@@ -23,10 +23,10 @@ type driverPositionSnapshot struct {
 }
 
 type Service struct {
-	geo        GeoStore
-	validator  *Validator
-	statusTTL  time.Duration
-	positions  sync.Map // driverID -> driverPositionSnapshot (fast in-memory plausibility lookup)
+	geo       GeoStore
+	validator *Validator
+	statusTTL time.Duration
+	positions sync.Map // driverID -> driverPositionSnapshot (fast in-memory plausibility lookup)
 }
 
 func NewService(geo GeoStore, validator *Validator, statusTTL time.Duration) *Service {
@@ -82,4 +82,3 @@ func (s *Service) UpdateLocation(ctx context.Context, driverID string, loc domai
 	metrics.DriverLocationUpdatesTotal.Inc()
 	return nil
 }
-

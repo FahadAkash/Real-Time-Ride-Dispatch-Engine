@@ -154,4 +154,3 @@ func TestDoubleBookingRaceConditions(t *testing.T) {
 		t.Fatalf("Subsequent reservation failed after driver lock was released: %v", err)
 	}
 }
-

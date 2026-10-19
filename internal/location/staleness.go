@@ -58,4 +58,3 @@ func (c *StalenessCleaner) CleanStaleDrivers(ctx context.Context, region string,
 		}
 	}
 }
-

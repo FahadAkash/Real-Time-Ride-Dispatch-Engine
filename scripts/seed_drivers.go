@@ -83,4 +83,3 @@ func main() {
 
 	fmt.Printf("Successfully seeded %d drivers into region '%s'.\n", *count, *region)
 }
-

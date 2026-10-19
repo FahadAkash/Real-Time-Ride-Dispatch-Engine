@@ -14,9 +14,9 @@ import (
 type EventHandler func(ctx context.Context, envelope *domain.EventEnvelope) error
 
 type ConsumerGroup struct {
-	client    *kgo.Client
-	handler   EventHandler
-	seenMu    sync.RWMutex
+	client     *kgo.Client
+	handler    EventHandler
+	seenMu     sync.RWMutex
 	seenEvents map[string]time.Time // eventId -> firstSeenAt
 }
 
@@ -90,4 +90,3 @@ func (c *ConsumerGroup) Close() {
 		c.client.Close()
 	}
 }
-
