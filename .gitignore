@@ -21,6 +21,8 @@ vendor/
 *.pem
 *.key
 *.crt
+deploy/keys/*
+!deploy/keys/.gitkeep
 deploy/observability/alertmanager/secrets/*
 !deploy/observability/alertmanager/secrets/.gitkeep
 

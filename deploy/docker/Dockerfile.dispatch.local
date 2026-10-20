@@ -1,0 +1,6 @@
+FROM alpine:latest
+WORKDIR /app
+COPY bin/dispatch /app/dispatch
+USER nobody
+EXPOSE 9100
+ENTRYPOINT ["/app/dispatch"]

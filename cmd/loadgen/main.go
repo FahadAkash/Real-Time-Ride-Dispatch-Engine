@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"syscall"
@@ -31,6 +32,7 @@ func main() {
 	driversCount := flag.Int("drivers", 1000, "Number of concurrent simulated drivers")
 	targetQPS := flag.Int("qps", 500, "Target ride requests per second")
 	duration := flag.Duration("duration", 30*time.Second, "Load generation duration")
+	label := flag.String("label", "Standard", "Label for test run")
 	flag.Parse()
 
 	log := logger.New("loadgen", "info", os.Stdout)
@@ -41,10 +43,20 @@ func main() {
 		slog.Duration("duration", *duration),
 	)
 
-	privKey, err := rsa.GenerateKey(rand.Reader, 2048)
-	if err != nil {
-		log.Error("Failed to generate rsa key", slog.String("error", err.Error()))
-		os.Exit(1)
+	var privKey *rsa.PrivateKey
+	if keyBytes, err := os.ReadFile("deploy/keys/jwt_rs256.key"); err == nil {
+		if rsaPriv, err := jwt.ParseRSAPrivateKeyFromPEM(keyBytes); err == nil {
+			privKey = rsaPriv
+			log.Info("Loaded local RSA private key from deploy/keys/jwt_rs256.key")
+		}
+	}
+	if privKey == nil {
+		var err error
+		privKey, err = rsa.GenerateKey(rand.Reader, 2048)
+		if err != nil {
+			log.Error("Failed to generate rsa key", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), *duration)
@@ -115,13 +127,19 @@ func main() {
 		reqCounter  int64
 		succCounter int64
 		errCounter  int64
+		latenciesMu sync.Mutex
+		latencies   []float64
+		statusCodes = make(map[int]int64)
+		statusMu    sync.Mutex
+		riderWg     sync.WaitGroup
 	)
 
+	startTime := time.Now()
 	reqInterval := time.Duration(float64(time.Second) / float64(*targetQPS))
 	reqTicker := time.NewTicker(reqInterval)
 	defer reqTicker.Stop()
 
-	log.Info("Load generator running...")
+	log.Info("Load generator running...", slog.String("label", *label))
 	go func() {
 		for {
 			select {
@@ -129,7 +147,10 @@ func main() {
 				return
 			case <-reqTicker.C:
 				atomic.AddInt64(&reqCounter, 1)
+				riderWg.Add(1)
 				go func() {
+					defer riderWg.Done()
+					t0 := time.Now()
 					riderID := fmt.Sprintf("rider-%06d", randInt(1, 100000))
 					token := generateToken(privKey, riderID, "rider")
 					idemKey := uuid.New().String()
@@ -148,17 +169,31 @@ func main() {
 						Region:      "downtown",
 					}
 					payload, _ := json.Marshal(dto)
-					req, _ := http.NewRequestWithContext(ctx, "POST", *gatewayURL+"/api/ride/request", bytes.NewReader(payload))
+					req, reqErr := http.NewRequestWithContext(context.Background(), "POST", *gatewayURL+"/api/ride/request", bytes.NewReader(payload))
+					if reqErr != nil {
+						atomic.AddInt64(&errCounter, 1)
+						return
+					}
 					req.Header.Set("Authorization", "Bearer "+token)
 					req.Header.Set("Content-Type", "application/json")
 					req.Header.Set("Idempotency-Key", idemKey)
 
 					resp, err := client.Do(req)
+					latMs := float64(time.Since(t0).Microseconds()) / 1000.0
+					latenciesMu.Lock()
+					latencies = append(latencies, latMs)
+					latenciesMu.Unlock()
+
 					if err != nil {
 						atomic.AddInt64(&errCounter, 1)
 						return
 					}
 					_ = resp.Body.Close()
+
+					statusMu.Lock()
+					statusCodes[resp.StatusCode]++
+					statusMu.Unlock()
+
 					if resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated {
 						atomic.AddInt64(&succCounter, 1)
 					} else {
@@ -170,11 +205,57 @@ func main() {
 	}()
 
 	<-ctx.Done()
-	log.Info("Load generation finished",
-		slog.Int64("totalRequests", atomic.LoadInt64(&reqCounter)),
-		slog.Int64("successfulRequests", atomic.LoadInt64(&succCounter)),
-		slog.Int64("failedRequests", atomic.LoadInt64(&errCounter)),
-	)
+	doneWaiting := make(chan struct{})
+	go func() {
+		riderWg.Wait()
+		close(doneWaiting)
+	}()
+	select {
+	case <-doneWaiting:
+	case <-time.After(3 * time.Second):
+	}
+
+	totalReq := atomic.LoadInt64(&reqCounter)
+	succReq := atomic.LoadInt64(&succCounter)
+	errReq := atomic.LoadInt64(&errCounter)
+	durationSec := time.Since(startTime).Seconds()
+	achievedQPS := float64(totalReq) / durationSec
+
+	sort.Float64s(latencies)
+	var minLat, avgLat, p50, p90, p95, p99, maxLat float64
+	if n := len(latencies); n > 0 {
+		minLat = latencies[0]
+		maxLat = latencies[n-1]
+		p50 = latencies[n*50/100]
+		p90 = latencies[n*90/100]
+		p95 = latencies[n*95/100]
+		p99 = latencies[n*99/100]
+		var sum float64
+		for _, l := range latencies {
+			sum += l
+		}
+		avgLat = sum / float64(n)
+	}
+
+	succRate := 0.0
+	if totalReq > 0 {
+		succRate = float64(succReq) * 100.0 / float64(totalReq)
+	}
+
+	fmt.Println("================================================================================")
+	fmt.Printf("PERFORMANCE REPORT: %s\n", *label)
+	fmt.Println("================================================================================")
+	fmt.Printf("Configured Target QPS: %d req/s | Simulated Active Drivers: %d\n", *targetQPS, *driversCount)
+	fmt.Printf("Test Duration:         %.2f s\n", durationSec)
+	fmt.Printf("Total Requests Sent:   %d\n", totalReq)
+	fmt.Printf("Successful Requests:   %d (%.2f%%)\n", succReq, succRate)
+	fmt.Printf("Failed Requests:       %d\n", errReq)
+	fmt.Printf("Realized Throughput:   %.1f req/s\n", achievedQPS)
+	fmt.Println("--------------------------------------------------------------------------------")
+	fmt.Printf("Latency (ms): Min: %.2f | Avg: %.2f | P50: %.2f | P90: %.2f | P95: %.2f | P99: %.2f | Max: %.2f\n",
+		minLat, avgLat, p50, p90, p95, p99, maxLat)
+	fmt.Printf("HTTP Status Codes:     %v\n", statusCodes)
+	fmt.Println("================================================================================")
 }
 
 func generateToken(privKey *rsa.PrivateKey, sub, role string) string {

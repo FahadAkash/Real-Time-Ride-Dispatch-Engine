@@ -1,0 +1,6 @@
+FROM alpine:latest
+WORKDIR /app
+COPY bin/gateway /app/gateway
+USER nobody
+EXPOSE 8080 9100
+ENTRYPOINT ["/app/gateway"]

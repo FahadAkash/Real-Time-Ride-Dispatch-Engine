@@ -1,0 +1,6 @@
+FROM alpine:latest
+WORKDIR /app
+COPY bin/notifier /app/notifier
+USER nobody
+EXPOSE 9100
+ENTRYPOINT ["/app/notifier"]

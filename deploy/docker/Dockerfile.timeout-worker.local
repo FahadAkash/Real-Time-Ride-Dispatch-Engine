@@ -1,0 +1,6 @@
+FROM alpine:latest
+WORKDIR /app
+COPY bin/timeout-worker /app/timeout-worker
+USER nobody
+EXPOSE 9100
+ENTRYPOINT ["/app/timeout-worker"]

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto"
 	"crypto/rand"
 	"crypto/rsa"
 	"log/slog"
@@ -10,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/ride-dispatch/engine/internal/dispatch"
 	"github.com/ride-dispatch/engine/internal/gateway"
 	"github.com/ride-dispatch/engine/internal/location"
@@ -89,9 +91,19 @@ func main() {
 	locationValidator := location.NewValidator(location.DefaultBoundingBox, 160.0, 2*time.Second)
 	locationSvc := location.NewService(redisClient, locationValidator, cfg.LocationStaleAfter)
 
-	// 4. Initialize JWT Validator (Local dev generates key pair if none configured)
-	privKey, _ := rsa.GenerateKey(rand.Reader, 2048)
-	jwtValidator := gateway.NewJWTValidator(cfg.JWTIssuer, cfg.JWTAudience, cfg.JWTAllowedAlgs, &privKey.PublicKey)
+	// 4. Initialize JWT Validator (checks deploy/keys/jwt_rs256.pub for local dev key sharing)
+	var pubKey crypto.PublicKey
+	if keyBytes, err := os.ReadFile("deploy/keys/jwt_rs256.pub"); err == nil {
+		if rsaPub, err := jwt.ParseRSAPublicKeyFromPEM(keyBytes); err == nil {
+			pubKey = rsaPub
+			log.Info("Loaded local RSA public key from deploy/keys/jwt_rs256.pub")
+		}
+	}
+	if pubKey == nil {
+		privKey, _ := rsa.GenerateKey(rand.Reader, 2048)
+		pubKey = &privKey.PublicKey
+	}
+	jwtValidator := gateway.NewJWTValidator(cfg.JWTIssuer, cfg.JWTAudience, cfg.JWTAllowedAlgs, pubKey)
 
 	// 5. Build Handlers & Router
 	handlers := gateway.NewHandlers(dispatchSvc, locationSvc)

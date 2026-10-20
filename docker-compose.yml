@@ -1,0 +1,124 @@
+version: '3.8'
+
+networks:
+  default:
+  server-infra_apps:
+    external: true
+
+volumes:
+  mongo-data:
+
+services:
+  mongo:
+    image: mongo:7.0
+    container_name: dispatch-mongo
+    ports:
+      - "127.0.0.1:27017:27017"
+    volumes:
+      - mongo-data:/data/db
+    networks:
+      - default
+      - server-infra_apps
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  gateway:
+    image: ride-dispatch/gateway:latest
+    container_name: dispatch-gateway
+    env_file:
+      - .env
+    environment:
+      APP_ENV: local
+      HTTP_ADDR: ":8080"
+      METRICS_ADDR: ":9100"
+      REDIS_ADDRS: "redis:6379"
+      REDIS_PASSWORD: "redis_secure_pass"
+      MONGO_URI: "mongodb://dispatch-mongo:27017"
+      MONGO_DB: "dispatch"
+      KAFKA_BROKERS: "kafka:9092"
+      RATE_LIMIT_RIDE_REQUEST_PER_MIN: 60000
+    ports:
+      - "8085:8080"
+    volumes:
+      - ./deploy/keys:/app/deploy/keys:ro
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - default
+      - server-infra_apps
+    restart: unless-stopped
+
+  dispatch:
+    image: ride-dispatch/dispatch:latest
+    container_name: dispatch-service
+    env_file:
+      - .env
+    environment:
+      APP_ENV: local
+      METRICS_ADDR: ":9100"
+      REDIS_ADDRS: "redis:6379"
+      REDIS_PASSWORD: "redis_secure_pass"
+      MONGO_URI: "mongodb://dispatch-mongo:27017"
+      MONGO_DB: "dispatch"
+      KAFKA_BROKERS: "kafka:9092"
+      RATE_LIMIT_RIDE_REQUEST_PER_MIN: 60000
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - default
+      - server-infra_apps
+    restart: unless-stopped
+
+  location:
+    image: ride-dispatch/location:latest
+    container_name: dispatch-location
+    env_file:
+      - .env
+    environment:
+      APP_ENV: local
+      METRICS_ADDR: ":9100"
+      REDIS_ADDRS: "redis:6379"
+      REDIS_PASSWORD: "redis_secure_pass"
+    networks:
+      - default
+      - server-infra_apps
+    restart: unless-stopped
+
+  timeout-worker:
+    image: ride-dispatch/timeout-worker:latest
+    container_name: dispatch-timeout-worker
+    env_file:
+      - .env
+    environment:
+      APP_ENV: local
+      METRICS_ADDR: ":9100"
+      REDIS_ADDRS: "redis:6379"
+      REDIS_PASSWORD: "redis_secure_pass"
+      MONGO_URI: "mongodb://dispatch-mongo:27017"
+      MONGO_DB: "dispatch"
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - default
+      - server-infra_apps
+    restart: unless-stopped
+
+  notifier:
+    image: ride-dispatch/notifier:latest
+    container_name: dispatch-notifier
+    env_file:
+      - .env
+    environment:
+      APP_ENV: local
+      METRICS_ADDR: ":9100"
+    networks:
+      - default
+      - server-infra_apps
+    restart: unless-stopped
