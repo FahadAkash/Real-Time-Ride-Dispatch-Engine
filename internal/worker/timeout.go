@@ -48,6 +48,7 @@ type TimeoutWorker struct {
 	logger   *slog.Logger
 }
 
+// NewTimeoutWorker creates a new TimeoutWorker with the provided configuration and dependencies.
 func NewTimeoutWorker(cfg TimeoutWorkerConfig, matcher Matcher, locker Locker, rideRepo RideRepo, notifier Notifier, logger *slog.Logger) *TimeoutWorker {
 	if cfg.PollInterval == 0 {
 		cfg.PollInterval = 1 * time.Second

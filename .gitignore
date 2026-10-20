@@ -36,3 +36,6 @@ Thumbs.db
 deploy/observability/prometheus-data/
 deploy/observability/grafana-data/
 
+
+#for testing 
+testing/
