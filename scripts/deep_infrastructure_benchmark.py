@@ -97,6 +97,7 @@ def main():
     parser.add_argument("--drivers", type=int, default=500, help="Simulated concurrent drivers")
     parser.add_argument("--duration", type=str, default="10s", help="Duration (e.g. 10s)")
     parser.add_argument("--label", type=str, default="Deep Infrastructure Test", help="Test label")
+    parser.add_argument("--gateway", type=str, default=os.environ.get("GATEWAY_URL", "http://192.168.0.113:8080"), help="Gateway URL")
     args = parser.parse_args()
 
     root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
@@ -104,6 +105,7 @@ def main():
     print("="*80)
     print(f"🚀 INITIATING DEEP INFRASTRUCTURE BENCHMARK")
     print(f"   Profile: {args.label}")
+    print(f"   Target Gateway: {args.gateway}")
     print(f"   Target QPS: {args.qps} | Active Drivers: {args.drivers} | Duration: {args.duration}")
     print("="*80)
 
@@ -124,7 +126,7 @@ def main():
       -v "{root_dir}/deploy/keys:/deploy/keys:ro" \
       alpine:latest \
       /loadgen \
-        -gateway=http://dispatch-gateway:8080 \
+        -gateway={args.gateway} \
         -drivers={args.drivers} \
         -qps={args.qps} \
         -duration={args.duration} \

@@ -8,6 +8,7 @@ import jwt
 
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 KEY_PATH = os.path.join(ROOT_DIR, "deploy/keys/jwt_rs256.key")
+GATEWAY_URL = os.environ.get("GATEWAY_URL", "http://192.168.0.113:8080")
 
 def run(cmd):
     return subprocess.run(cmd, shell=True, capture_output=True, text=True).stdout.strip()
@@ -46,7 +47,7 @@ token = get_token()
 success_count = 0
 for i in range(10):
     idem = f"chaos-test-{uuid.uuid4()}"
-    cmd = f"""docker exec nginx curl -s -X POST http://dispatch-gateway:8080/api/ride/request \
+    cmd = f"""docker exec nginx curl -s -X POST {GATEWAY_URL}/api/ride/request \
       -H "Authorization: Bearer {token}" \
       -H "Content-Type: application/json" \
       -H "Idempotency-Key: {idem}" \
@@ -64,7 +65,7 @@ print(f"  📦 Transactional Outbox Buffer in MongoDB: {outbox_pending_during} e
 # Step 4: Test Idempotency with Kafka Dead
 print("\n[Step 4] 🔒 IDEMPOTENCY TEST: Replaying exact same Idempotency-Key...")
 dup_idem = f"idempotent-test-{uuid.uuid4()}"
-cmd_dup = f"""docker exec nginx curl -s -X POST http://dispatch-gateway:8080/api/ride/request \
+cmd_dup = f"""docker exec nginx curl -s -X POST {GATEWAY_URL}/api/ride/request \
   -H "Authorization: Bearer {token}" \
   -H "Content-Type: application/json" \
   -H "Idempotency-Key: {dup_idem}" \

@@ -5,7 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(dirname "$SCRIPT_DIR")"
 
 TEST_TYPE="${1:-spike}"
-GATEWAY_URL="${GATEWAY_URL:-http://dispatch-gateway:8080}"
+GATEWAY_URL="${GATEWAY_URL:-http://192.168.0.113:8080}"
 DURATION="${DURATION:-}"
 
 echo "============================================================"

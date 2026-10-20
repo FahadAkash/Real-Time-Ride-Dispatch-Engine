@@ -3,6 +3,7 @@ package integration_test
 import (
 	"context"
 	"net"
+	"os"
 	"testing"
 	"time"
 
@@ -21,9 +22,12 @@ func isServiceAvailable(addr string, timeout time.Duration) bool {
 }
 
 func TestRedisIntegration_LocksAndGeo(t *testing.T) {
-	redisAddr := "localhost:6379"
+	redisAddr := os.Getenv("REDIS_ADDRS")
+	if redisAddr == "" {
+		redisAddr = "192.168.0.113:6379"
+	}
 	if !isServiceAvailable(redisAddr, 500*time.Millisecond) {
-		t.Skip("Redis server not available at localhost:6379; skipping integration test")
+		t.Skipf("Redis server not available at %s; skipping integration test", redisAddr)
 	}
 
 	ctx := context.Background()
@@ -93,9 +97,13 @@ func TestRedisIntegration_LocksAndGeo(t *testing.T) {
 }
 
 func TestMongoIntegration_RideLifecycle(t *testing.T) {
-	mongoURI := "mongodb://localhost:27017"
-	if !isServiceAvailable("localhost:27017", 500*time.Millisecond) {
-		t.Skip("MongoDB server not available at localhost:27017; skipping integration test")
+	mongoURI := os.Getenv("MONGO_URI")
+	if mongoURI == "" {
+		mongoURI = "mongodb://192.168.0.113:27017"
+	}
+	mongoHost := "192.168.0.113:27017"
+	if !isServiceAvailable(mongoHost, 500*time.Millisecond) {
+		t.Skipf("MongoDB server not available at %s; skipping integration test", mongoHost)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

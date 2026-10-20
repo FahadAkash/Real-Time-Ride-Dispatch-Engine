@@ -26,7 +26,7 @@ export const options = {
   },
 };
 
-const BASE_URL = __ENV.GATEWAY_URL || 'http://localhost:8080';
+const BASE_URL = __ENV.GATEWAY_URL || 'http://192.168.0.113:8080';
 
 // Simple UUID generator for k6
 function uuidv4() {

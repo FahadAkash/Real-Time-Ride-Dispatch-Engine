@@ -22,7 +22,7 @@ export const options = {
   },
 };
 
-const BASE_URL = __ENV.GATEWAY_URL || 'http://dispatch-gateway:8080';
+const BASE_URL = __ENV.GATEWAY_URL || 'http://192.168.0.113:8080';
 const JWT_TOKEN = __ENV.JWT_TOKEN || '';
 
 function uuidv4() {
